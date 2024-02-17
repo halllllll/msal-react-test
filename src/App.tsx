@@ -15,6 +15,8 @@ import { FC, Suspense } from "react";
 
 const loginRequest = {
 	scopes: [
+		"openid",
+		"profile",
 		"user.read",
 		"chat.read",
 		"chat.readbasic",

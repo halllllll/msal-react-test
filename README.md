@@ -9,3 +9,8 @@
 - [@azure/msal-react package SDK](https://learn.microsoft.com/ja-jp/javascript/api/%40azure/msal-react/?view=msal-js-latest)
 - [msal-reactでAzure AD認証を実現する](https://qiita.com/nanndot/items/682ef7ebd8255eb6b1df)
 - [MSAL Reactを使用してサインインするSPAをAzure Static Web Appsにデプロイ](https://itc-engineering-blog.netlify.app/blogs/azure-msal-react)
+
+# practice
+- [openapi-fetch](https://openapi-ts.pages.dev/openapi-fetch/)
+- データフェッチに`tanstack query`を使用
+- Teams Chatsを取得

@@ -1,4 +1,4 @@
-import { useGetChatsFirst20, useInfinityQuerySample } from '../funcs/funcs';
+import { useGetChatsFirst20, useGetChatsPaginate } from '../funcs/funcs';
 import { FC } from 'react';
 
 export const Chat20: FC = () => {
@@ -57,11 +57,10 @@ export const Chat20: FC = () => {
 };
 
 export const PagenateChats: FC = () => {
-  const { data, isPending, hasNextPage, fetchNextPage, isError, error, retNextLink } = useInfinityQuerySample();
-  console.error(error)
-
-  const countpropertyname = '@odata.count';
-  const count = data[countpropertyname as keyof typeof data];
+  const { data, isPending, isFetching, hasNextPage, fetchNextPage, isError, error } =
+    useGetChatsPaginate();
+  console.error(error);
+  const count = data.count;
 
   return (
     <>
@@ -71,7 +70,6 @@ export const PagenateChats: FC = () => {
           <div>失敗！</div>
         ) : (
           <div>
-            <p>yay~</p>
             <p>{`count: ${count}`}</p>
             <table>
               <thead>
@@ -86,33 +84,32 @@ export const PagenateChats: FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {data?.pages.map((v) => {
+                {data.result.map((v, idx) => {
                   return (
                     <>
-                      {v.value?.map((vv, idx) => {
-                        return (
-                          <tr key={vv.id}>
-                            <td>{idx + 1}</td>
-                            <td>{vv.chatType}</td>
-                            <td>{vv.id}</td>
-                            <td>{vv.topic}</td>
-                            <td>{vv.createdDateTime}</td>
-                            <td>{vv.lastUpdatedDateTime}</td>
-                            <td>{vv.webUrl}</td>
-                          </tr>
-                        );
-                      })}
+                      <tr key={v?.id}>
+                        <td>{idx + 1}</td>
+                        <td>{}</td>
+                        <td>{v?.id}</td>
+                        <td>{v?.topic}</td>
+                        <td>{v?.createdat}</td>
+                        <td>{v?.updatedat}</td>
+                        <td>{v?.url}</td>
+                      </tr>
                     </>
                   );
                 })}
               </tbody>
             </table>
             {hasNextPage ? (
-              <button type="button" onClick={()=>{
-                // addKey(`${(Math.random()*1000).toString()}`)
-                fetchNextPage()
-                }}>
-                {`続けて取得する (${retNextLink})`}
+              <button
+                type="button"
+                onClick={() => {
+                  fetchNextPage();
+                }}
+                disabled={isFetching}
+              >
+                {isFetching ? '取得中...' : '続けて取得する'}
               </button>
             ) : (
               <div>終了</div>

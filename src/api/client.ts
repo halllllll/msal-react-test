@@ -1,6 +1,6 @@
 import { components, paths } from '@/types/oas';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { useMsal } from '@azure/msal-react';
+import { IMsalContext } from '@azure/msal-react';
 import createClient, { Middleware } from 'openapi-fetch';
 
 export const loginRequest = {
@@ -19,8 +19,8 @@ export const loginRequest = {
 export type ChatsAPIResponse =
   components['responses']['microsoft.graph.chatCollectionResponse']['content']['application/json'];
 
-export const getAccessToken = async () => {
-  const msalCtx = useMsal();
+export const getAccessToken = async (msalCtx: IMsalContext) => {
+  //const msalCtx = useMsal();
   const { instance, accounts } = msalCtx;
   await Promise.resolve(); // https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/5796#issuecomment-1763461620
   try {
@@ -50,8 +50,8 @@ const throwOnError: Middleware = {
   },
 };
 
-const prepareClient = async () => {
-  const at = await getAccessToken();
+const prepareClient = async (msalCtx: IMsalContext) => {
+  const at = await getAccessToken(msalCtx);
   const client = createClient<paths>({
     baseUrl: 'https://graph.microsoft.com/v1.0',
     headers: { Authorization: `Bearer ${at}` },
@@ -61,13 +61,45 @@ const prepareClient = async () => {
 };
 
 // tanstack queryにて実装
-export const getChats = async (param?: string): Promise<ChatsAPIResponse> => {
-  console.log(`next link: ${param}`);
-  const chatsClient = await prepareClient();
+export const _getChats = async (msalCtx: IMsalContext): Promise<ChatsAPIResponse> => {
+  const chatsClient = await prepareClient(msalCtx);
   const res = await chatsClient.GET('/chats');
   if (res.error) {
     console.error(res.error);
     throw res.error.error;
   }
   return res.data;
+};
+
+export const getChats = async (
+  nextLink: string,
+  msalCtx: IMsalContext,
+): Promise<ChatsAPIResponse> => {
+  if (nextLink.slice(nextLink.indexOf('?$skiptoken'), -1) === '') {
+    const chatsClient = await prepareClient(msalCtx);
+
+    const res = await chatsClient.GET('/chats', {
+      params: {
+        query: {},
+      },
+    });
+    if (res.error) {
+      console.error(res.error);
+      throw res.error.error;
+    }
+    return res.data;
+  }
+  // skiptokenのパラメータをopenapi-fetchでは扱えなかった
+  // 生のfetchでやることにする
+  const at = await getAccessToken(msalCtx);
+  const res = await fetch(nextLink, {
+    headers: {
+      Authorization: `Bearer ${at}`,
+    },
+  });
+  if (!res.ok) {
+    console.error(res.body);
+    throw res.body;
+  }
+  return await res.json();
 };

@@ -2,8 +2,8 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useGetChatsFirst20, useGetChatsPaginate } from '../funcs/funcs';
 import { FC, Suspense, useState } from 'react';
 import { ErrorFallback } from './error-boundary';
-import Excel from "exceljs"
-import {saveAs} from "file-saver"
+import Excel from 'exceljs';
+import { saveAs } from 'file-saver';
 
 export const Chat20: FC = () => {
   const { data, isError } = useGetChatsFirst20();
@@ -12,8 +12,6 @@ export const Chat20: FC = () => {
   }
   const countpropertyname = '@odata.count';
   const count = data[countpropertyname as keyof typeof data];
-  // const linkpropertyname = "@odata.nextLink"
-  //  const nextlink = data[linkpropertyname as keyof typeof data]
   const nextlink = data['@odata.nextLink'];
 
   return (
@@ -126,27 +124,33 @@ export const PagenateChats: FC = () => {
   );
 };
 
-
-
 const DownloadLink: FC = () => {
-  const { data, isPending, hasNextPage, fetchNextPage, error} =
-    useGetChatsPaginate();
+  const { data, isPending, hasNextPage, fetchNextPage, error } = useGetChatsPaginate();
   console.error(error);
-  const [onSave, setOnSave] = useState<boolean>(false)
+  const [onSave, setOnSave] = useState<boolean>(false);
 
-  if(hasNextPage)fetchNextPage();
+  if (hasNextPage) fetchNextPage();
 
   const save = async () => {
-    setOnSave(false)
+    setOnSave(false);
     const workbook = new Excel.Workbook();
     workbook.created = new Date();
-    const worksheet = workbook.addWorksheet("chats");
-    worksheet.columns = [{header: "name", key: "topic"}, {header: "id", key: "id", }, {header: "type", key: "type"}, {header: "url", key: "url"}]
-    worksheet.addRows(data.result.map(v => {return {topic: v?.topic, id: v?.id, type: v?.type, url: v?.url}}))
+    const worksheet = workbook.addWorksheet('chats');
+    worksheet.columns = [
+      { header: 'name', key: 'topic' },
+      { header: 'id', key: 'id' },
+      { header: 'type', key: 'type' },
+      { header: 'url', key: 'url' },
+    ];
+    worksheet.addRows(
+      data.result.map((v) => {
+        return { topic: v?.topic, id: v?.id, type: v?.type, url: v?.url };
+      }),
+    );
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]),  "allchats.xlsx")
-    setOnSave(true)
-  }
+    saveAs(new Blob([buffer]), 'allchats.xlsx');
+    setOnSave(true);
+  };
   const count = data.count;
   return (
     <div>
@@ -156,7 +160,9 @@ const DownloadLink: FC = () => {
         <>
           <div>{`取得完了 ${count}`}</div>
           {!hasNextPage && (
-            <button type="button" onClick={save} disabled={onSave}>ダウンロード</button>
+            <button type="button" onClick={save} disabled={onSave}>
+              ダウンロード
+            </button>
           )}
           <table>
             <thead>
@@ -199,7 +205,9 @@ export const DonwloadsChats: FC = () => {
   return (
     <div>
       {!preparing ? (
-        <button type="button" onClick={()=>setPreparing(true)}>xlsxでChatを保存</button>
+        <button type="button" onClick={() => setPreparing(true)}>
+          xlsxでChatを保存
+        </button>
       ) : (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Suspense fallback={<h2>wait...</h2>}>

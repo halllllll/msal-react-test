@@ -22,7 +22,7 @@ export type ChatsAPIResponse =
 export const getAccessToken = async (msalCtx: IMsalContext) => {
   //const msalCtx = useMsal();
   const { instance, accounts } = msalCtx;
-  await Promise.resolve(); // https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/5796#issuecomment-1763461620
+  // await Promise.resolve(); // https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/5796#issuecomment-1763461620
   try {
     const silentReq = await instance.acquireTokenSilent({
       ...loginRequest,
@@ -61,15 +61,6 @@ const prepareClient = async (msalCtx: IMsalContext) => {
 };
 
 // tanstack queryにて実装
-export const _getChats = async (msalCtx: IMsalContext): Promise<ChatsAPIResponse> => {
-  const chatsClient = await prepareClient(msalCtx);
-  const res = await chatsClient.GET('/chats');
-  if (res.error) {
-    console.error(res.error);
-    throw res.error.error;
-  }
-  return res.data;
-};
 
 export const getChats = async (
   nextLink: string,

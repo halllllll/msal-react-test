@@ -7,7 +7,7 @@ import {
   useMemo,
 } from "react";
 
-export const viewType = ["first", "pagenate"] as const
+export const viewType = ["first", "pagenate", "download"] as const
 
 // context state
 export type MyAppCtx = {
@@ -55,6 +55,9 @@ const ctxReducer = (
     case "pagenate": {
       return {...curData, view: "pagenate"}
     }
+    case "download": {
+      return {...curData, view: "download"}
+    }
     case "null": {
       return {...curData, view: null}
     }
@@ -68,7 +71,7 @@ export const MyAppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   };
   const [MyAppState, MyAppDispatch] = useReducer(ctxReducer, initial);
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-const  MyApp = useMemo(() => {
+  const  MyApp = useMemo(() => {
     return { MyAppState, MyAppDispatch };
   }, [MyAppState, MyAppDispatch]);
   return (

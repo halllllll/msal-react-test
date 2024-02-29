@@ -1,6 +1,6 @@
 import React, { FC, Suspense } from 'react';
 import { UserData } from './userdata';
-import { Chat20, PagenateChats } from './AllChats';
+import { Chat20, DonwloadsChats, PagenateChats } from './AllChats';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from './error-boundary';
 import { useMyAppContext } from '../context/hook';
@@ -31,6 +31,8 @@ export const Home: FC = () => {
                 <Chat20 />
               ) : MyAppCtx.view === "pagenate" ? (
                 <PagenateChats />
+              ) : MyAppCtx.view === "download" ? (
+                <DonwloadsChats />
               ) : null}
             </Suspense>
           </ErrorBoundary>

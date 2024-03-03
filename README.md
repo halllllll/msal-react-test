@@ -14,3 +14,4 @@
 - [openapi-fetch](https://openapi-ts.pages.dev/openapi-fetch/)
 - データフェッチに`tanstack query`を使用
 - Teams Chatsを取得
+- 保存できるようにした（[exceljs](https://github.com/exceljs/exceljs)）

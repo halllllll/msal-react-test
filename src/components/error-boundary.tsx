@@ -8,7 +8,7 @@ export const ErrorFallback: FC<FallbackProps> = ({
   const err = error as Error;
   return (
     <div>
-      <h2>エラー発生: {err.message}</h2>
+      <h2>エラー発生: {err.name} {err.message}</h2>
       <button
         type="button"
         onClick={() => {

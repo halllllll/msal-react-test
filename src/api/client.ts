@@ -1,6 +1,9 @@
 import { components, paths } from '@/types/oas';
-import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { IMsalContext } from '@azure/msal-react';
+import {
+  BrowserCacheLocation,
+  InteractionRequiredAuthError,
+  PublicClientApplication,
+} from '@azure/msal-browser';
 import createClient, { Middleware } from 'openapi-fetch';
 
 export const loginRequest = {
@@ -19,12 +22,24 @@ export const loginRequest = {
 export type ChatsAPIResponse =
   components['responses']['microsoft.graph.chatCollectionResponse']['content']['application/json'];
 
-export const getAccessToken = async (msalCtx: IMsalContext) => {
-  //const msalCtx = useMsal();
-  const { instance, accounts } = msalCtx;
+export type RejectResponse = components['responses']['error']['content']['application/json'];
+export const msalClient = new PublicClientApplication({
+  auth: {
+    clientId: import.meta.env.VITE_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AUTHORITY}`,
+    redirectUri: import.meta.env.VITE_REDIRECT_URI,
+  },
+  cache: {
+    cacheLocation: BrowserCacheLocation.SessionStorage,
+    storeAuthStateInCookie: true,
+  },
+});
+
+export const getAccessToken = async () => {
+  const accounts = msalClient.getAllAccounts();
   // await Promise.resolve(); // https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/5796#issuecomment-1763461620
   try {
-    const silentReq = await instance.acquireTokenSilent({
+    const silentReq = await msalClient.acquireTokenSilent({
       ...loginRequest,
       account: accounts[0],
     });
@@ -32,14 +47,27 @@ export const getAccessToken = async (msalCtx: IMsalContext) => {
   } catch (err: unknown) {
     // InteractionRequiredAuthError エラーの場合、再度リダイレクトで認証させる
     if (err instanceof InteractionRequiredAuthError) {
-      return instance.acquireTokenRedirect(loginRequest);
+      return msalClient.acquireTokenRedirect(loginRequest);
     }
     throw err;
   }
 };
 
+const authMiddleware: Middleware = {
+  async onRequest(req) {
+    const at = await getAccessToken();
+    req.headers.set('Authorization', `Bearer ${at}`);
+    return req;
+  },
+};
+
 const throwOnError: Middleware = {
   async onResponse(res) {
+    if (res.status === 403) {
+      // https://learn.microsoft.com/en-us/graph/resolve-auth-errors
+      const body = (await res.clone().json()) as RejectResponse;
+      throw body.error;
+    }
     if (res.status >= 400) {
       const body = res.headers.get('content-type')?.includes('json')
         ? await res.clone().json()
@@ -50,24 +78,20 @@ const throwOnError: Middleware = {
   },
 };
 
-const prepareClient = async (msalCtx: IMsalContext) => {
-  const at = await getAccessToken(msalCtx);
+const prepareClient = async () => {
   const client = createClient<paths>({
     baseUrl: 'https://graph.microsoft.com/v1.0',
-    headers: { Authorization: `Bearer ${at}` },
   });
+  client.use(authMiddleware);
   client.use(throwOnError);
   return client;
 };
 
 // tanstack queryにて実装
 
-export const getChats = async (
-  nextLink: string,
-  msalCtx: IMsalContext,
-): Promise<ChatsAPIResponse> => {
+export const getChats = async (nextLink: string): Promise<ChatsAPIResponse> => {
   if (nextLink.slice(nextLink.indexOf('?$skiptoken'), -1) === '') {
-    const chatsClient = await prepareClient(msalCtx);
+    const chatsClient = await prepareClient();
 
     const res = await chatsClient.GET('/chats', {
       params: {
@@ -75,14 +99,13 @@ export const getChats = async (
       },
     });
     if (res.error) {
-      console.error(res.error);
       throw res.error.error;
     }
     return res.data;
   }
   // skiptokenのパラメータをopenapi-fetchでは扱えなかった
   // 生のfetchでやることにする
-  const at = await getAccessToken(msalCtx);
+  const at = await getAccessToken();
   const res = await fetch(nextLink, {
     headers: {
       Authorization: `Bearer ${at}`,
